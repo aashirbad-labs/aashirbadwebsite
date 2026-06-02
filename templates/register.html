@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Register</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h2>🆕 Employee Registration</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <label for="employee_id">Employee ID *</label>
+        <input id="employee_id" type="text" name="employee_id" required minlength="3" placeholder="At least 3 characters">
+
+        <label for="name">Full Name *</label>
+        <input id="name" type="text" name="name" required minlength="2" placeholder="Enter your full name">
+
+        <label for="gmail">Email Address *</label>
+        <input id="gmail" type="email" name="gmail" required placeholder="your@email.com">
+
+        <label for="password">Password *</label>
+        <input id="password" type="password" name="password" required minlength="8" placeholder="At least 8 characters">
+        <small style="color: #cbd5e1; margin-top: -10px;">💡 Must have: uppercase, lowercase, number</small>
+
+        <label for="contact">Contact Number</label>
+        <input id="contact" type="text" name="contact" placeholder="Optional">
+
+        <label for="dob">Date of Birth</label>
+        <input id="dob" type="date" name="dob">
+
+        <label for="address">Address</label>
+        <input id="address" type="text" name="address" placeholder="Optional">
+
+        <label for="postal_code">Postal Code</label>
+        <input id="postal_code" type="text" name="postal_code" placeholder="Optional">
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p>Already registered? <a href="{{ url_for('login') }}">Login here</a>.</p>
+</div>
+</body>
+</html>

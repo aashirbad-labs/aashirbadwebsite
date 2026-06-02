@@ -1,0 +1,2 @@
+# This file ensures the checkin_videos directory is tracked by Git
+# Videos are excluded from Git but the directory structure must exist

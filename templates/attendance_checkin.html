@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check-in Verification</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h2>🔐 Two-Step Check-in Verification</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div class="attendance-card">
+        <p><strong>Step 1:</strong> Allow camera access and record yourself showing your keyboard clearly.</p>
+        <p><strong>Step 2:</strong> Type the verification code exactly as shown below.</p>
+        <p style="background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; text-align: center;">
+            <strong>Your Code:</strong> <span id="display-code" style="font-size: 1.3em; color: #60a5fa; font-weight: bold;">{{ verification_code }}</span>
+        </p>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="margin-top: 0;">📹 Live Preview</h4>
+            <video id="preview" autoplay muted playsinline class="video-preview" style="border: 2px solid rgba(96, 165, 250, 0.5);"></video>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="margin-top: 0;">✅ Recorded Video</h4>
+            <video id="recorded" controls class="video-preview"></video>
+        </div>
+
+        <div class="button-row">
+            <button id="start-camera" type="button">📷 Start Camera</button>
+            <button id="start-record" type="button" disabled>⏹️ Start Recording</button>
+            <button id="stop-record" type="button" disabled>⏹️ Stop Recording</button>
+        </div>
+
+        <form id="checkin-form" method="POST" action="{{ url_for('attendance_check_in') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <label for="verification_code">Enter the verification code shown above</label>
+            <input id="verification_code" name="verification_code" type="text" required placeholder="Type the 6-digit code">
+            <input id="video_file" name="video_file" type="file" hidden>
+            <button id="upload-video" type="submit" disabled>✓ Upload Video and Check In</button>
+        </form>
+
+        <div class="button-row">
+            <button id="start-camera" type="button">📷 Start Camera</button>
+            <button id="start-record" type="button" disabled>⏹️ Start Recording</button>
+            <button id="stop-record" type="button" disabled>⏹️ Stop Recording</button>
+        </div>
+
+        <form id="checkin-form" method="POST" action="{{ url_for('attendance_check_in') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <label for="verification_code">Enter the verification code shown above</label>
+            <input id="verification_code" name="verification_code" type="text" required placeholder="Type the 6-digit code">
+            <input id="video_file" name="video_file" type="file" hidden>
+            <button id="upload-video" type="submit" disabled>✓ Upload Video and Check In</button>
+        </form>
+
+        <p id="form-status" class="form-status"></p>
+    </div>
+
+    <p><a href="{{ url_for('dashboard') }}">← Back to Dashboard</a></p>
+</div>
+
+<script>
+const preview = document.getElementById('preview');
+const recorded = document.getElementById('recorded');
+const startCamera = document.getElementById('start-camera');
+const startRecord = document.getElementById('start-record');
+const stopRecord = document.getElementById('stop-record');
+const uploadVideo = document.getElementById('upload-video');
+const checkinForm = document.getElementById('checkin-form');
+const statusText = document.getElementById('form-status');
+let mediaRecorder;
+let recordedChunks = [];
+let recordedBlob = null;
+let localStream = null;
+
+startCamera.addEventListener('click', async () => {
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        preview.srcObject = localStream;
+        startRecord.disabled = false;
+        statusText.textContent = '✓ Camera ready. Please position your keyboard in view and click Start Recording.';
+        statusText.style.color = '#d1fae5';
+    } catch (error) {
+        statusText.textContent = '❌ Unable to access camera. Please allow camera permissions and try again.';
+        statusText.style.color = '#fee2e2';
+    }
+});
+
+startRecord.addEventListener('click', () => {
+    if (!localStream) return;
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm;codecs=vp8,opus' });
+    mediaRecorder.ondataavailable = event => {
+        if (event.data && event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+    mediaRecorder.onstop = () => {
+        recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+        recorded.src = URL.createObjectURL(recordedBlob);
+        uploadVideo.disabled = false;
+        statusText.textContent = '✓ Recording complete. Now type the verification code and click Upload.';
+        statusText.style.color = '#d1fae5';
+    };
+    mediaRecorder.start();
+    startRecord.disabled = true;
+    stopRecord.disabled = false;
+    statusText.textContent = '⏹️ Recording in progress... keep your keyboard visible.';
+    statusText.style.color = '#fcd34d';
+});
+
+stopRecord.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        stopRecord.disabled = true;
+    }
+});
+
+checkinForm.addEventListener('submit', async event => {
+    if (!recordedBlob) {
+        event.preventDefault();
+        statusText.textContent = '❌ Please record a video before uploading.';
+        statusText.style.color = '#fee2e2';
+        return;
+    }
+
+    const code = document.getElementById('verification_code').value;
+    const displayCode = document.getElementById('display-code').textContent;
+    if (code !== displayCode) {
+        event.preventDefault();
+        statusText.textContent = '❌ Code does not match. Please check and try again.';
+        statusText.style.color = '#fee2e2';
+        return;
+    }
+
+    event.preventDefault();
+    statusText.textContent = '⏳ Uploading video...';
+    
+    const formData = new FormData();
+    const file = new File([recordedBlob], 'checkin.webm', { type: 'video/webm' });
+    formData.append('video_file', file);
+    formData.append('verification_code', code);
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) formData.append('csrf_token', csrfToken);
+
+    const response = await fetch('{{ url_for('attendance_check_in') }}', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (response.ok) {
+        window.location.href = response.url || '{{ url_for('dashboard') }}';
+    } else {
+        statusText.textContent = '❌ Upload failed. Please try again.';
+        statusText.style.color = '#fee2e2';
+    }
+});
+</script>
+</body>
+</html>

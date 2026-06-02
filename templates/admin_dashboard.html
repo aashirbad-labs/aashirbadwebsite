@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+<body>
+<div class="container">
+    <div class="nav-header">
+        <h1>📊 Admin Dashboard</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">← Dashboard</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flash-messages">
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% endwith %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Employees</h3>
+            <p class="stat-number">{{ total_employees }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Checked In Today</h3>
+            <p class="stat-number">{{ today_stats['checked_in'] or 0 }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Checked Out Today</h3>
+            <p class="stat-number">{{ today_stats['checked_out'] or 0 }}</p>
+        </div>
+    </div>
+
+    <div class="admin-section">
+        <h2>📋 Recent Attendance Records</h2>
+        {% if recent_records %}
+            <table class="attendance-table">
+                <thead>
+                    <tr>
+                        <th>Employee ID</th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Check In</th>
+                        <th>Check Out</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in recent_records %}
+                    <tr>
+                        <td>{{ record['employee_id'] }}</td>
+                        <td>{{ record['name'] }}</td>
+                        <td>{{ record['date'] }}</td>
+                        <td>{{ record['check_in'] or '—' }}</td>
+                        <td>{{ record['check_out'] or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-records">No attendance records yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="admin-section">
+        <h2>🔧 Admin Options</h2>
+        <div class="button-row">
+            <button class="btn btn-secondary" onclick="alert('Export feature coming soon!')">Export Reports</button>
+            <button class="btn btn-secondary" onclick="alert('Manage employees feature coming soon!')">Manage Employees</button>
+            <button class="btn btn-secondary" onclick="alert('Analytics feature coming soon!')">View Analytics</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-links a {
+    padding: 10px 16px;
+    background: rgba(96, 165, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.35);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.nav-links a:hover {
+    background: rgba(96, 165, 250, 0.25);
+    text-decoration: none;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(79, 142, 247, 0.15), rgba(124, 58, 237, 0.15));
+    border: 1px solid rgba(96, 165, 250, 0.25);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.stat-card h3 {
+    margin: 0 0 10px;
+    color: #93c5fd;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #60a5fa;
+    margin: 0;
+}
+
+.admin-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(148, 163, 184, 0.08);
+    border-radius: 16px;
+    border: 1px solid rgba(96, 165, 250, 0.15);
+}
+
+.admin-section h2 {
+    margin-top: 0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4f8ef7, #7c3aed);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(79, 142, 247, 0.3);
+}
+
+.btn-secondary {
+    background: rgba(96, 165, 250, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    color: #93c5fd;
+}
+
+.btn-secondary:hover {
+    background: rgba(96, 165, 250, 0.3);
+}
+
+.no-records {
+    text-align: center;
+    color: #cbd5e1;
+    padding: 20px;
+}
+</style>
+</body>
+</html>

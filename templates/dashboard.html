@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>👋 Welcome, {{ employee['name'] }}</h1>
+        <div style="display: flex; gap: 10px;">
+            {% if session.get('is_admin') %}
+            <a href="{{ url_for('admin_dashboard') }}" style="padding: 8px 16px; background: rgba(96, 165, 250, 0.2); border: 1px solid rgba(96, 165, 250, 0.4); border-radius: 8px; text-decoration: none;">📊 Admin</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" style="padding: 8px 16px; background: rgba(248, 113, 113, 0.2); border: 1px solid rgba(248, 113, 113, 0.4); border-radius: 8px; text-decoration: none;">Logout</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flash-messages">
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% endwith %}
+
+    <h3>📅 Today's Attendance</h3>
+    <div class="attendance-card">
+        {% if today_attendance %}
+            <p><strong>Date:</strong> {{ today_attendance['date'] }}</p>
+            <p><strong>✅ Checked in:</strong> {{ today_attendance['check_in'] }}</p>
+            {% if today_attendance['check_out'] %}
+                <p><strong>✅ Checked out:</strong> {{ today_attendance['check_out'] }}</p>
+                <p style="color: #d1fae5; font-style: italic;">Your attendance for today is complete.</p>
+            {% else %}
+                <p style="color: #fcd34d; font-style: italic;">⏳ You are still checked in. Remember to check out at the end of the day.</p>
+                <form method="POST" action="{{ url_for('attendance_check_out') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Check Out Now</button>
+                </form>
+            {% endif %}
+            {% if today_attendance['video_path'] %}
+                <p><strong>📹 Verification video:</strong> <a href="{{ url_for('static', filename=today_attendance['video_path']) }}" target="_blank">View Recording</a></p>
+            {% endif %}
+        {% else %}
+            <p style="color: #fcd34d;">⚠️ You have not checked in today.</p>
+            <form method="GET" action="{{ url_for('attendance_check_in') }}">
+                <button type="submit" style="background: linear-gradient(135deg, #10b981, #059669);">Check In</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <h3>👤 Employee Information</h3>
+    <div class="info-row">
+        <p><strong>Employee ID:</strong> {{ employee['employee_id'] }}</p>
+        <p><strong>Name:</strong> {{ employee['name'] }}</p>
+        <p><strong>Email:</strong> {{ employee['gmail'] }}</p>
+        <p><strong>Contact:</strong> {{ employee['contact'] or '—' }}</p>
+        <p><strong>Address:</strong> {{ employee['address'] or '—' }}</p>
+        <p><strong>Postal Code:</strong> {{ employee['postal_code'] or '—' }}</p>
+        <p><strong>Date of Birth:</strong> {{ employee['dob'] or '—' }}</p>
+    </div>
+
+    <h3>📊 Attendance History (Last 12 months)</h3>
+    {% if attendance_segments %}
+        {% for segment in attendance_segments %}
+            <div class="attendance-segment">
+                <h4>{{ segment.label }}</h4>
+                {% if segment.records %}
+                    <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Check-in</th>
+                                <th>Check-out</th>
+                                <th>Video</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in segment.records %}
+                                <tr>
+                                    <td>{{ record['date'] }}</td>
+                                    <td>{{ record['check_in'] or '—' }}</td>
+                                    <td>{{ record['check_out'] or '—' }}</td>
+                                    <td>
+                                        {% if record['video_path'] %}
+                                            <a href="{{ url_for('static', filename=record['video_path']) }}" target="_blank">View 📹</a>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="segment-empty">No data in this period.</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No attendance history yet.</p>
+    {% endif %}
+</div>
+</body>
+</html>
