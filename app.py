@@ -20,6 +20,9 @@ app.config['WTF_CSRF_TIME_LIMIT'] = None
 csrf = CSRFProtect(app)
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
 
+# Ensure database is initialized on startup
+_db_initialized = False
+
 # Logging setup
 logging.basicConfig(
     level=logging.INFO,
@@ -36,9 +39,13 @@ MIN_PASSWORD_LENGTH = 8
 
 # Database helpers
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception as e:
+        logger.error(f"Database connection error: {e}")
+        raise
 
 
 def init_db():
@@ -245,6 +252,19 @@ def add_attendance_check_out(employee_id):
 
 
 init_db()
+
+
+@app.before_request
+def ensure_db_initialized():
+    """Ensure database is initialized before every request"""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            init_db()
+            _db_initialized = True
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+            abort(500)
 
 
 @app.route('/')
